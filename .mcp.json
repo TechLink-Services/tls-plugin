@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "dev-portal": {
+      "type": "http",
+      "url": "https://mcp.techlinksvc.net/mcp?key=SIMPL_TLS_SECRET_MCP_STRING"
+    },
+    "dev-db": {
+      "type": "http",
+      "url": "https://dtqu6d5ijw5aonmddpslvlihwa0bqrwj.lambda-url.us-east-1.on.aws/mcp?token=fbb38e7821e75d38fb0cc13fd60e9f7fb930949592c11093346e5d5b786ccf31"
+    }
+  }
+}
