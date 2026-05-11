@@ -1,0 +1,1 @@
+rm claude-plugin.plugin && zip -r claude-plugin.plugin . -x "*.DS_Store" -x ".git/*" -x ".gitignore" -x ".gitattributes" -x ".gitmodules" -x "build.sh"
