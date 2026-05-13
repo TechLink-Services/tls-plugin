@@ -16,7 +16,7 @@ metadata:
   version: "0.1.0"
 ---
 
-When this skill triggers, use the dev-portal connector to retrieve and present information from the SIMPL portal in a clear, role-appropriate format.
+When this skill triggers, use the simpl-portal connector to retrieve and present information from the SIMPL portal in a clear, role-appropriate format.
 
 ## What SIMPL manages
 
@@ -32,7 +32,7 @@ SIMPL is TechLink's all-in-one operations platform. It tracks:
 ## Core behavior
 
 1. Identify what the user is looking for (a specific record, a list, a status check, or a summary).
-2. Use the appropriate dev-portal tool to retrieve the relevant data.
+2. Use the appropriate simpl-portal tool to retrieve the relevant data.
 3. Present results in a format suited to the request — a single record gets a structured summary; a list gets a scannable table; a status check gets a one-line answer with key details.
 4. Offer relevant follow-ups based on what was retrieved (e.g., "Want me to pull the invoice history for this client?" or "Should I check which technician is assigned?").
 

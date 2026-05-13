@@ -11,11 +11,11 @@ metadata:
   version: "0.1.0"
 ---
 
-When this skill triggers, help the user understand what data the company database contains and how it's structured, using the dev-db connector.
+When this skill triggers, help the user understand what data the company database contains and how it's structured, using the simpl-db connector.
 
 ## Core behavior
 
-1. Use the dev-db connector to list available tables or describe specific tables as requested.
+1. Use the simpl-db connector to list available tables or describe specific tables as requested.
 2. Present schema information in plain language — label fields with plain descriptions, not just raw column names.
 3. Group related fields together (e.g., contact info, financial fields, status fields) to make large tables easier to scan.
 4. Offer natural next steps: "Want me to pull some example records from this table?" or "I can run a query using any of these fields."
@@ -32,4 +32,4 @@ Always prioritize clarity over technical precision for non-developer audiences.
 
 ## Scope
 
-This skill explains structure — it does not modify the schema or expose internal database credentials or connection details. If the user asks about a table or field the dev-db connector does not expose, explain that it isn't available through this connection.
+This skill explains structure — it does not modify the schema or expose internal database credentials or connection details. If the user asks about a table or field the simpl-db connector does not expose, explain that it isn't available through this connection.

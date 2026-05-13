@@ -13,7 +13,7 @@ metadata:
   version: "0.1.0"
 ---
 
-When this skill triggers, help the user retrieve data from the company database via the dev-db connector without requiring them to know SQL or technical database concepts.
+When this skill triggers, help the user retrieve data from the company database via the simpl-db connector without requiring them to know SQL or technical database concepts.
 
 ## MANDATORY WORKFLOW — follow every step, no exceptions
 
@@ -95,6 +95,6 @@ Example: to list directors, call `user_account_list` with `role_flag=256`.
 
 ## Data boundaries
 
-- Only query data the dev-db connector exposes. Do not attempt to access tables or fields not surfaced by the connector.
+- Only query data the simpl-db connector exposes. Do not attempt to access tables or fields not surfaced by the connector.
 - If a query would return a very large result set (hundreds of rows), proactively offer to summarize or filter rather than dumping everything.
 - Never modify data through this skill — reads only. For data changes, direct the user to the SIMPL portal.

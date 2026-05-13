@@ -52,14 +52,15 @@ Add the TechLink marketplace to Claude Code once, then install the plugin:
 
 Future updates install automatically at startup — no reinstall needed.
 
-### Via .plugin file
+### Via .plugin file (developers only)
 
-If you received a `claude-plugin.plugin` file directly, install it from within Claude Code:
+To test a local build without going through the marketplace, run `build.sh` to produce a `.plugin` file, then load it for a single session:
 
 ```shell
-/plugin install --file /path/to/claude-plugin.plugin
+bash build.sh
 ```
+Uninstall the plugin through Claude Cowork GUI and upload the new plugin again
 
 ## Connector setup
 
-This plugin requires two internal MCP servers (`dev-portal` and `dev-db`) to be configured in Claude Code before the skills will work. Connector setup is handled by the development team as part of onboarding — reach out to them to get your machine configured.
+This plugin requires two internal MCP servers (`simpl-portal` and `simpl-db`) to be configured in Claude Code before the skills will work. Connector setup is handled by the development team as part of onboarding — reach out to them to get your machine configured.
