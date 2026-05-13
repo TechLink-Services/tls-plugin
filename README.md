@@ -1,56 +1,74 @@
 # TechLink Claude Plugin
 
-Extends Claude with skills and connectors tailored for TechLink Services — giving every team member (operations, accounting, sales, marketing, recruiting, executives, and developers) the ability to access the SIMPL portal, query company data, and handle incidents without switching between tools.
+Extends Claude Code with skills and connectors tailored for TechLink Services — giving every team member access to the SIMPL portal, company data, and operational workflows without switching between tools.
 
 ## Skills
 
-### Query the database
-Ask natural-language questions about company data — work orders, clients, invoices, payments, technicians, and more. No SQL knowledge needed.
-
-Example prompts:
-- "How many open work orders do we have right now?"
-- "Show me all unpaid invoices older than 30 days."
-- "Which technicians have the lowest on-time rate this month?"
-
-### Schema explorer
-Understand how the company database is structured — what tables exist, what fields they contain, and how they relate to each other.
-
-Example prompts:
-- "What tables are in the database?"
-- "What fields are available on the work order table?"
-- "What data do we track about clients?"
-
 ### Portal resources
-Look up and review resources in the SIMPL portal — work orders, projects, clients, technicians, invoices, and scheduling.
+Look up and work with any resource in SIMPL — work orders, clients, projects, technicians, invoices, payments, and scheduling.
 
-Example prompts:
 - "Find work order #4821."
 - "Show me all open jobs for Acme Corp."
 - "What's the outstanding balance for this client?"
 - "Which technicians are scheduled tomorrow?"
 
-### Incident runbook
-Get step-by-step guidance through operational incidents — technician no-shows, mis-assigned jobs, billing errors, disputed charges, and client deliverable problems.
+### Query the database
+Run aggregate analysis and bulk reports across company data. No SQL knowledge needed — just ask in plain language.
 
-Example prompts:
-- "A technician didn't show up for a job."
-- "A client is disputing an invoice."
-- "We sent the wrong deliverable to a client."
+- "How many open work orders do we have right now?"
+- "Show me all unpaid invoices older than 30 days."
+- "Which technicians have the lowest on-time rate this month?"
 
-## Connectors
+### Route jobs
+Surface unassigned or unscheduled work orders for a client, grouped by location. From there you can run auto-dispatch, find nearby installers, build routes, or generate route sheets.
 
-This plugin requires two self-hosted MCP servers (dev-portal and dev-db). After installing the plugin, you must update the MCP server URLs in the plugin's `.mcp.json` file before the connectors will work.
+- "Show me unscheduled jobs for Acme Corp."
+- "What jobs haven't been assigned for this client?"
+- "Run auto-dispatch on these open work orders."
 
-| Server | Placeholder URL to replace |
-|--------|---------------------------|
+### Mesmerize confirmations
+Generate a ready-to-send site confirmation email for a Mesmerize work order — pulls the install date, site address, and equipment tracking info from SIMPL automatically.
+
+- "Generate a confirmation email for WO #4821."
+- "Send the Mesmerize confirmation for this work order."
+
+### Schema explorer
+Understand how the company database is structured — what tables exist, what fields they contain, and how they relate to each other.
+
+- "What tables are in the database?"
+- "What fields are on the work order table?"
+- "What data do we track about clients?"
+
+## Installation
+
+### Via marketplace (recommended)
+
+Add the TechLink marketplace to Claude Code once, then install the plugin:
+
+```shell
+/plugin marketplace add TechLink-Services/claude-plugin
+/plugin install techlink-claude-plugin@techlink-claude-plugin
+```
+
+Future updates install automatically at startup — no reinstall needed.
+
+### Via .plugin file
+
+If you received a `claude-plugin.plugin` file directly, install it from within Claude Code:
+
+```shell
+/plugin install --file /path/to/claude-plugin.plugin
+```
+
+## Connector setup
+
+This plugin requires two internal MCP servers. After installing, configure their URLs before the skills will work.
+
+Open `~/.claude/plugins/techlink-claude-plugin/.mcp.json` and replace the placeholder URLs:
+
+| Server | Replace this placeholder |
+|--------|--------------------------|
 | `dev-portal` | `https://replace-with-your-dev-portal-mcp-url/mcp` |
 | `dev-db` | `https://replace-with-your-dev-db-mcp-url/mcp` |
 
-Contact your system administrator or the developer who set up these servers for the correct URLs.
-
-## Setup
-
-1. Install the plugin in Cowork by double-clicking the `.plugin` file.
-2. Open the plugin's `.mcp.json` file and replace the two placeholder URLs with your actual MCP server endpoints.
-3. Restart Cowork to activate the MCP server connections.
-4. The four skills will be available immediately in any Cowork session.
+Contact your system administrator for the correct URLs, then run `/reload-plugins` to apply the changes.
