@@ -1,0 +1,13 @@
+{
+  "name": "techlink-plugin",
+  "owner": {
+    "name": "TechLink Services"
+  },
+  "plugins": [
+    {
+      "name": "techlink-claude-plugin",
+      "description": "Helps every TechLink Services team member use the SIMPL portal and automate repetitive workflows — covering work orders, scheduling, billing, client deliverables, and more.",
+      "source": "./"
+    }
+  ]
+}
