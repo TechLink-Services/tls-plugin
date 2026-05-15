@@ -52,83 +52,12 @@ no install start date is set.
 
 Note the `id` of every returned work order — you'll need them in Step 3.
 
-## Step 3 — Enrich with location data
+## Steps 3–5 — Enrich with location data, cluster, and present results
 
-Fetch address and coordinates for all returned work orders in a single query. Use this
-exact join pattern — **do not deviate**. The naive approaches (`site.addr_id`, direct
-column guesses) do not work; this is the query that does:
-
-```sql
-SELECT
-  wo.id,
-  wo.summary,
-  wo.statcode,
-  s.company   AS site_name,
-  s.siteid,
-  a.address1,
-  a.city,
-  st.abbr     AS state,
-  a.zip,
-  a.lat,
-  a.lng
-FROM workorder wo
-LEFT JOIN site    s  ON wo.site_id     = s.id
-LEFT JOIN address a  ON a.entity_id   = s.id
-                     AND a.address_type = 'site'
-LEFT JOIN state   st ON a.state       = st.id
-WHERE wo.id IN (<comma-separated list of WO ids>)
-```
-
-**Critical schema notes:**
-- `workorder.id` — the primary key is `id`, not `workorder_id`
-- `site.id` — use `id`, not `site_id`
-- Address-to-site join: `address.entity_id = site.id AND address.address_type = 'site'`
-  — `site.addr_id` is always 0 and must NOT be used
-- `address` columns: `address1`, `city`, `state` (int FK), `zip`, `lat`, `lng`
-- `state` table: join on `address.state = state.id`, use `state.abbr` for abbreviation
-- `site.company` — the store name; `site.siteid` — the client's internal store number
-
-## Step 4 — Group by geographic proximity
-
-Use the Haversine formula to calculate the distance in miles between every pair of job
-sites, then cluster jobs within roughly 75 miles of each other into the same group.
-
-**Haversine formula (miles):**
-```
-d = 3958.8 × 2 × arcsin(√(
-      sin²((lat2−lat1)/2) +
-      cos(lat1) × cos(lat2) × sin²((lng2−lng1)/2)
-    ))
-```
-(all angles in radians)
-
-Clustering approach: pick the job with the most neighbors within 75 miles as the cluster
-anchor, assign all within-range jobs to that cluster, then repeat for remaining unassigned
-jobs. Label each cluster by its anchor's city and state (e.g., "Minnetonka, MN area").
-
-If any work orders have no coordinates (lat = 0 and lng = 0), list them in a separate
-"No location data" section at the bottom rather than silently omitting them.
-
-## Step 5 — Present results
-
-For each geographic cluster, show:
-- A header: **[City, State] area — N job(s)**
-- A table with columns: WO #, Summary, Site Name, Site ID, Address, Status
-
-Use the statcode reference to translate numeric statcodes to human-readable labels:
-
-| statcode | Label |
-|---|---|
-| 22 | Dispatched (no tech) |
-| 26 | Open (unassigned) |
-| 40 | Assigned |
-| 50 | Accepted |
-| 55 | Pending |
-| 60 | Scheduled (no date) |
-
-At the bottom, note the total count and flag any jobs where statcode is 50 with a
-scheduled date that has already passed — these had a technician but no confirmed install
-date and may be overdue.
+Delegate to the `geo-clusterer` agent, passing the list of WO IDs from Step 2. It will
+fetch address and coordinate data, group jobs into geographic clusters using the Haversine
+formula, and present the results grouped by region. Wait for it to finish before
+proceeding to Step 6.
 
 ---
 
@@ -198,55 +127,18 @@ Key rules:
 - Week 2: ~21 jobs (1 large route Days 1–5 + 1 medium route Days 1–2, simultaneously)
 - Week 3: ~20 jobs (1 large route Days 6–7 + 1 medium route Days 3–4, simultaneously)
 
-## Step 11 — Generate Excel Route Sheets
+## Step 11 — Confirm Excel Generation
 
-Create one `.xlsx` file per route using `openpyxl`. Each file contains two sheets.
+Present the completed route plan summary to the user, then ask:
 
-### Sheet 1: Route Summary
+> "Would you like me to generate Excel route sheets for these routes?"
 
-| Field | Content |
-|---|---|
-| Title banner | Route name, navy header (#1F3864), white Arial bold 14pt |
-| Client | Client name |
-| Route | Route name |
-| Total Jobs | Count |
-| Scheduled Dates | Date range + arrive/depart notes |
-| Region Notes | Parallelization guidance, tech recommendations |
-| Installer Pool table | Installer ID, Company/Contact, City, State, Notes |
+If yes, proceed to Step 12. If no, stop here.
 
-Installer pool header: blue (#2E75B6), column headers navy, alternating white/#F2F2F2 rows.
+## Step 12 — Generate Excel Route Sheets
 
-### Sheet 2: Job Schedule
-
-Columns: `Stop | WO # | Site Name | Site ID | Address | City | State | Work Summary | Status`
-
-- One **day-header row** per day (blue #2E75B6, white bold text, merged across all columns)
-- Column header row beneath each day header (navy, white bold)
-- Data rows alternate white/#F2F2F2, overridden by status color:
-  - Open (new): white
-  - Open (unassigned): #FFF2CC (yellow)
-  - Dispatched (no tech): #FCE4D6 (orange)
-  - Pending: #F8CBAD (dark orange)
-- Wrap text on all cells, row height 30
-- Status legend at the bottom of the sheet
-- Freeze top row, hide gridlines
-
-### File naming convention
-```
-<Client_Slug>_<RegionSlug>_Route.xlsx
-```
-Examples: `Constant_Media_NYNJ_Route.xlsx`, `Constant_Media_CA_BayArea_Route.xlsx`
-
-### Validation
-After saving, run `scripts/recalc.py` on each file and confirm
-`"status": "success"` with `"total_errors": 0` before delivering.
-
-## Output
-
-Present all files as `computer://` links grouped by week, followed by a summary table:
-
-| Week | Dates | Routes Active | Jobs |
-|---|---|---|---|
-| Week 1 | … | … | … |
-| Week 2 | … | … | … |
-| Week 3 | … | … | … |
+Delegate to the `excel-route-generator` agent, passing all route data: client name and
+slug, and for each route — its name, region slug, installer pool, day-by-day job schedule,
+scheduled date range with arrive/depart notes, and region notes. The agent generates and
+validates all `.xlsx` files in parallel and delivers them as `computer://` links grouped
+by week.
