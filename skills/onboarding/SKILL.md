@@ -2,14 +2,15 @@
 name: onboarding
 description: >
   Onboard a new TechLink Cowork user. Asks about their department and role,
-  identifies their team, and walks through a role-appropriate Cowork setup
-  using live team and client data from SIMPL.
+  identifies their team, then has a conversation to learn their background,
+  day-to-day work, what they enjoy, what frustrates them, and how their
+  clients or stakeholders operate. Saves a comprehensive profile to SIMPL.
   Trigger phrases: "onboard me", "set me up", "I'm new", "getting started".
 ---
 
 # TechLink Cowork Onboarding
 
-Welcome a new user to Cowork and walk them through a personalized setup based on their department, level, and team.
+Get to know a new user — their role, their history, how they work, and who they work with. The goal is to build a rich profile you can carry into every future conversation, not to show them a list of features.
 
 ---
 
@@ -40,7 +41,7 @@ Use two separate `AskUserQuestion` calls — one for department, one for level.
 
 Normalize department to one of: `operations`, `sales`, `sales-engineering`, `accounting`, `recruiting`, `leadership`.
 
-Determine if the user is a **team lead or manager** (level is "Team lead" or "Manager or admin") or an **individual contributor**. This affects what you set up in Step 4.
+Determine if the user is a **team lead or manager** (level is "Team lead" or "Manager or admin") or an **individual contributor**.
 
 ---
 
@@ -58,7 +59,7 @@ GROUP BY t.id, t.name
 ORDER BY t.name
 ```
 
-The response contains a list of teams with `name`, `slug`, and `client_count`. Present the team names clearly and ask the user which team they're joining.
+The response contains a list of teams with `name` and `client_count`. Present the team names clearly and ask the user which team they're joining.
 
 Example output:
 
@@ -75,7 +76,7 @@ Which team will you be on? Here are the active teams:
   Retail Services (23 clients)
 ```
 
-Wait for the user to select a team. Match their answer to a slug (case-insensitive, partial match okay).
+Wait for the user to select a team. Match their answer to a team name (case-insensitive, partial match okay).
 
 ---
 
@@ -98,107 +99,53 @@ This gives the full client list. Store it for Steps 4 and 5. Do not show the raw
 
 ---
 
-## Step 4 — Department-specific orientation
+## Step 4 — Learn about them
 
-Deliver a concise, role-specific orientation. Tailor based on normalized department and whether they are a team lead/manager or IC.
+Ask the following questions one at a time as natural conversation. Do not present them as a numbered list or a form. Wait for each answer before moving to the next. Let the conversation breathe — if they say something interesting, follow up before continuing.
 
-### Operations
+Do not mention tools, skills, or what Cowork can do during this step. The goal is to listen.
 
-Tell them:
-> "Most of what you'll do in Cowork connects to your work orders and scheduling. Here's what you can ask me:
->
-> - **Look up a work order**: 'What's the status of WO 12345?' — I'll pull details, notes, tech assignment, and tracking.
-> - **Dispatch unscheduled jobs**: 'Show me unassigned jobs for [Client]' — I'll group them by geography and help you build routes.
-> - **Mesmerize confirmations**: 'Send a confirmation for WO 12345' — I'll pull the WO, site address, tracking info, and draft the email ready to send.
-> - **Scheduling checks**: 'What's scheduled this week for [Client]?' — I'll pull the calendar.
->
-> Your team manages **{N} clients**. I know who they are, so you can refer to them by name."
+1. **Background and experience**: "How long have you been doing this kind of work? And what were you doing before this role?"
 
-If team lead, additionally:
-> "As a team lead, you can also ask me to build a team dashboard — a snapshot of open WOs and upcoming jobs across all your clients that your whole team can see."
+2. **Day-to-day**: "Walk me through what a typical day looks like for you."
 
-Key skills: **portal-resources**, **route-jobs**, **mesmerize-confirm**.
+3. **What they enjoy**: "What parts of the job do you find yourself looking forward to?"
 
-### Sales
+4. **Frustrations**: "What are the parts that feel like they slow you down, or that you wish were easier?"
 
-Tell them:
-> "Cowork connects to Apollo for prospecting and can help you draft outreach:
->
-> - **Find prospects**: 'Find IT managers at mid-size retailers in the Southeast'
-> - **Enrich a company**: 'What do we know about [Company]?'
-> - **Draft an email**: 'Draft a cold outreach email to [Name] at [Company]' — I'll write it and give you a mailto link to open in Outlook.
-> - **Add to a sequence**: 'Add [Contact] to the [Campaign] sequence in Apollo'"
-
-Key skills: **draft-email-mailto**. Connectors: Apollo.
-
-### Sales Engineering
-
-> *[Stub — to be completed. Planned focus: technical scoping, solution documentation, and client-facing proposal support. Likely overlaps with Sales (Apollo, email drafting) and Operations (SIMPL data). Flesh out once use cases are confirmed.]*
-
-Key skills: TBD.
-
-### Accounting
-
-Tell them:
-> "Cowork connects directly to SIMPL's financial data. You can ask me:
->
-> - **Aging report**: 'Show me outstanding invoices older than 30 days'
-> - **Client balance**: 'What does [Client] owe?'
-> - **Uninvoiced work**: 'What work orders need invoicing for [Client]?'
-> - **Revenue by month**: 'What did we earn from [Client] in Q1?'
->
-> I work from live SIMPL data, so the numbers are always current."
-
-Key skills: **query-db**, **portal-resources**.
-
-### Recruiting
-
-> *[Stub — to be completed. Planned focus: candidate pipeline visibility, hiring status by team, and outreach drafting via Apollo or email. Confirm which systems Recruiting actually uses before fleshing this out.]*
-
-Key skills: TBD.
-
-### Leadership
-
-> *[Stub — to be completed. Planned focus: cross-team dashboards, revenue and performance reporting, and high-level portfolio views. Likely a superset of other department views. Flesh out with actual leadership use cases.]*
-
-Key skills: TBD.
-
-### Other / Unknown Department
-
-Give a general overview: SIMPL lookups, financial queries, email drafting, route planning. Let them explore.
+Take notes on their answers — you'll use these to build their profile in Step 6.
 
 ---
 
-## Step 5 — Introduce their client context
+## Step 5 — Learn about their clients and working relationships
 
-> "Your team has **{N} clients**. For each one, there's a running context record in SIMPL where the team keeps notes — key contacts, scheduling preferences, quirks, history. These get loaded when you ask about a specific client.
->
-> Here are a few of your clients:
-> [list 3–5 client names, picked from the first entries in the client list]
->
-> You can refer to any client by name and I'll know who you mean."
+Continue the conversation. Still no tool suggestions.
 
-If team lead: mention they can also ask Claude to update a client's context by writing to the `context` column of the `client` table in simpl-db.
+**For Operations users** (you have their client list from Step 3):
+
+Mention a few client names naturally and invite them to talk about them:
+
+> "Your team works with [Client A], [Client B], [Client C] — and others. Are there any you work with closely? Tell me about them — how they like to operate, any contacts I should know, anything quirky about how things run."
+
+Let them talk. They may describe one client in detail or give you a quick take on several. Capture:
+- Client name and any key contacts they mention
+- Scheduling preferences, communication style, anything unusual
+- How active or demanding the client is
+
+**For non-Operations users**:
+
+> "Who are the main people, teams, or accounts you're working with day to day?"
 
 ---
 
-## Step 6 — Optional: generate a team dashboard (team leads only)
+## Step 6 — Save personnel profile
 
-If the user is a team lead or manager, offer:
-> "Want me to build a team dashboard for {Team Name}? It would be a page your whole team can open in Cowork showing open work orders and upcoming scheduled jobs. I can generate it now — takes about a minute."
-
-If yes, invoke **artifact-sync skill in push mode** with team slug and artifact id `team-dashboard`.
-
----
-
-## Step 7 — Save personnel profile
-
-Before wrapping up, persist the user's profile to the simpl-db so future conversations load it automatically.
+Silently persist everything collected in this session. Do not announce this step to the user.
 
 1. Call `get_logged_in_user` to retrieve their SIMPL username and full name.
 2. Call `update_user_context` to append the profile as a new log entry:
    - `type`: `"onboarding"`
-   - `context`: the following markdown, filled in from the answers collected during this session:
+   - `context`: the following markdown, filled in from the conversation:
 
 ```markdown
 # {Full Name}
@@ -208,6 +155,21 @@ Before wrapping up, persist the user's profile to the simpl-db so future convers
 - **Level**: {level}
 - **Team**: {team name, or "N/A" if not Operations}
 - **Onboarded**: {today's date}
+
+## Background
+{Summary of their experience — how long in this kind of role, where they came from}
+
+## Day-to-day
+{What a typical day looks like for them}
+
+## What they enjoy
+{What parts of the job they find rewarding}
+
+## Frustrations
+{What slows them down or is harder than it should be}
+
+## Clients and working relationships
+{Notes from the client conversation — client names, key contacts, working style, quirks, anything they flagged}
 ```
 
 3. Append the following block to `~/.claude/CLAUDE.md` (create the file if it doesn't exist). First check whether a `## TechLink personnel profile` section is already present — if it is, skip this write.
@@ -231,26 +193,24 @@ Do all of this silently — no need to mention it to the user.
 
 ---
 
-## Step 8 — Wrap up
+## Step 7 — Wrap up
 
-> "You're all set. Quick cheat sheet:
->
-> - Ask me about any work order, client, or project by name
-> - 'Look up WO [number]' to pull a work order
-> - 'Unassigned jobs for [Client]' to see what needs scheduling
-> - 'Show context for [Client]' to see the team's running notes
-> - 'Update context for [Client]' to add something to those notes
->
-> Your team is **{Team Name}** with {N} clients. Anything you want to try right now?"
+Keep it brief. No cheat sheets, no feature lists.
+
+> "Thanks for sharing all that — I've got a good sense of how you work and what matters to you. I'll keep this in mind as we go."
+
+If the conversation surfaced something specific they're currently dealing with (a tricky client, a backlog of unscheduled jobs, a report they need to pull), you can offer to pick it up now — but only if it came up naturally. Don't prompt for it.
 
 ---
 
 ## Implementation notes
 
-- Replace `{N}` with the actual client count and `{Team Name}` with the human-readable team name from the DB query.
-- Tone: warm and direct. Do not dump a feature list — use examples relevant to their role.
+- Tone throughout: warm, curious, unhurried. This is a conversation, not intake.
+- Do not pitch tools, skills, or Cowork features at any point after Step 3.
 - Refer to clients by their `company` name, never by slug or ID.
 - Do not expose internal DB paths or query details to the user.
 - Tool names:
   - `mcp__36aa6fc7-8701-4c5a-9545-e3b8fc122992__get_logged_in_user`
+  - `mcp__36aa6fc7-8701-4c5a-9545-e3b8fc122992__update_user_context`
+  - `mcp__36aa6fc7-8701-4c5a-9545-e3b8fc122992__get_user_context`
   - `mcp__81208da0-feb6-49af-ab5a-d1fdae279d7d__query`
