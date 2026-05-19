@@ -51,10 +51,10 @@ Skip this step entirely if the user is not in Operations. Proceed directly to St
 Query the simpl-db for the team list:
 
 ```sql
-SELECT id, name, slug, COUNT(c.id) AS client_count
+SELECT t.id, t.name, COUNT(c.id) AS client_count
 FROM teams t
-LEFT JOIN clients c ON c.team_id = t.id
-GROUP BY t.id, t.name, t.slug
+LEFT JOIN clients c ON c.team_id = t.id AND c.enabled = 1 AND c.deleted = 0
+GROUP BY t.id, t.name
 ORDER BY t.name
 ```
 
@@ -86,9 +86,11 @@ Skip this step if the user is not in Operations.
 Once you have the team's `id` from Step 2, query the simpl-db for its clients:
 
 ```sql
-SELECT id AS client_id, company, slug
+SELECT id AS client_id, company
 FROM clients
 WHERE team_id = {team_id}
+  AND enabled = 1
+  AND deleted = 0
 ORDER BY company
 ```
 
