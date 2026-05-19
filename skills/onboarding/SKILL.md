@@ -1,11 +1,10 @@
 ---
 name: onboarding
 description: >
-  Onboard a new TechLink Cowork user. Takes --department and --level arguments,
-  asks which team the user is joining, and walks through a role-appropriate Cowork
-  setup using live team and client data from S3 and SIMPL.
-  Trigger phrases: "onboard me", "set me up", "I'm new", "getting started",
-  or any invocation with --department and/or --level flags.
+  Onboard a new TechLink Cowork user. Asks about their department and role,
+  identifies their team, and walks through a role-appropriate Cowork setup
+  using live team and client data from SIMPL.
+  Trigger phrases: "onboard me", "set me up", "I'm new", "getting started".
 ---
 
 # TechLink Cowork Onboarding
@@ -14,26 +13,49 @@ Welcome a new user to Cowork and walk them through a personalized setup based on
 
 ---
 
-## Step 1 — Parse arguments
+## Step 1 — Ask about their role
 
-The skill may be invoked with arguments:
-- `--department` (e.g. `operations`, `project management`, `accounting`, `sales`)
-- `--level` (e.g. `project coordinator`, `dispatcher`, `team lead`, `manager`, `admin`)
+Use `AskUserQuestion` with two questions:
 
-If either argument is missing, ask before proceeding.
+Use two separate `AskUserQuestion` calls — one for department, one for level.
 
-Normalize department to one of: `operations`, `project-management`, `accounting`, `sales`, `other`.
+**Question 1 — Department** (first call):
+- Header: "Department"
+- Question: "Which department are you in?"
+- Options:
+  - Operations
+  - Sales
+  - Sales Engineering
+  - Accounting
+  - Recruiting
+  - Leadership
 
-Determine if the user is a **team lead or manager** (level contains "lead", "manager", or "admin") or an **individual contributor**. This affects what you set up in Step 4.
+**Question 2 — Level** (second call, after department is answered):
+- Header: "Your role"
+- Question: "What best describes your role?"
+- Options:
+  - Individual contributor (coordinator, dispatcher, specialist)
+  - Team lead
+  - Manager or admin
+
+Normalize department to one of: `operations`, `sales`, `sales-engineering`, `accounting`, `recruiting`, `leadership`.
+
+Determine if the user is a **team lead or manager** (level is "Team lead" or "Manager or admin") or an **individual contributor**. This affects what you set up in Step 4.
 
 ---
 
-## Step 2 — Identify their team
+## Step 2 — Identify their team (Operations only)
 
-Read the team list from S3:
+Skip this step entirely if the user is not in Operations. Proceed directly to Step 4.
 
-```
-get_object(key: "teams/index.json")
+Query the simpl-db for the team list:
+
+```sql
+SELECT id, name, slug, COUNT(c.id) AS client_count
+FROM teams t
+LEFT JOIN clients c ON c.team_id = t.id
+GROUP BY t.id, t.name, t.slug
+ORDER BY t.name
 ```
 
 The response contains a list of teams with `name`, `slug`, and `client_count`. Present the team names clearly and ask the user which team they're joining.
@@ -57,15 +79,20 @@ Wait for the user to select a team. Match their answer to a slug (case-insensiti
 
 ---
 
-## Step 3 — Load team context
+## Step 3 — Load team context (Operations only)
 
-Once you have their team slug, read:
+Skip this step if the user is not in Operations.
 
+Once you have the team's `id` from Step 2, query the simpl-db for its clients:
+
+```sql
+SELECT id AS client_id, company, slug
+FROM clients
+WHERE team_id = {team_id}
+ORDER BY company
 ```
-get_object(key: "teams/{slug}/index.json")
-```
 
-This gives the full client list (`client_id`, `company`, `slug`). Store it for Steps 4 and 5. Do not show the raw data to the user.
+This gives the full client list. Store it for Steps 4 and 5. Do not show the raw data to the user.
 
 ---
 
@@ -90,22 +117,23 @@ If team lead, additionally:
 
 Key skills: **portal-resources**, **route-jobs**, **mesmerize-confirm**.
 
-### Project Management
+### Sales
 
 Tell them:
-> "Your work lives at the intersection of clients and projects. Here's what Cowork can do for you:
+> "Cowork connects to Apollo for prospecting and can help you draft outreach:
 >
-> - **Client status**: 'What's open for [Client]?' — I'll pull recent work orders, open items, and project status from SIMPL.
-> - **Project overview**: 'Show me all projects for [Client]' — I'll list them with managers and statuses.
-> - **Notes and context**: Each of your clients has a context file where the team keeps running notes — preferences, contacts, patterns. Ask me to pull it up or add to it.
-> - **Reports**: 'Give me a summary of uninvoiced work for [Client]' — I can query the database for financial and status snapshots.
->
-> Your team handles **{N} clients**. I can reference any of them by name."
+> - **Find prospects**: 'Find IT managers at mid-size retailers in the Southeast'
+> - **Enrich a company**: 'What do we know about [Company]?'
+> - **Draft an email**: 'Draft a cold outreach email to [Name] at [Company]' — I'll write it and give you a mailto link to open in Outlook.
+> - **Add to a sequence**: 'Add [Contact] to the [Campaign] sequence in Apollo'"
 
-If team lead:
-> "You can ask me to generate a team dashboard — a formatted view of open work orders and upcoming jobs across your portfolio, pushed to your whole team."
+Key skills: **draft-email-mailto**. Connectors: Apollo.
 
-Key skills: **portal-resources**, **query-db**, **artifact-sync**.
+### Sales Engineering
+
+> *[Stub — to be completed. Planned focus: technical scoping, solution documentation, and client-facing proposal support. Likely overlaps with Sales (Apollo, email drafting) and Operations (SIMPL data). Flesh out once use cases are confirmed.]*
+
+Key skills: TBD.
 
 ### Accounting
 
@@ -121,17 +149,17 @@ Tell them:
 
 Key skills: **query-db**, **portal-resources**.
 
-### Sales
+### Recruiting
 
-Tell them:
-> "Cowork connects to Apollo for prospecting and can help you draft outreach:
->
-> - **Find prospects**: 'Find IT managers at mid-size retailers in the Southeast'
-> - **Enrich a company**: 'What do we know about [Company]?'
-> - **Draft an email**: 'Draft a cold outreach email to [Name] at [Company]' — I'll write it and give you a mailto link to open in Outlook.
-> - **Add to a sequence**: 'Add [Contact] to the [Campaign] sequence in Apollo'"
+> *[Stub — to be completed. Planned focus: candidate pipeline visibility, hiring status by team, and outreach drafting via Apollo or email. Confirm which systems Recruiting actually uses before fleshing this out.]*
 
-Key skills: **draft-email-mailto**. Connectors: Apollo.
+Key skills: TBD.
+
+### Leadership
+
+> *[Stub — to be completed. Planned focus: cross-team dashboards, revenue and performance reporting, and high-level portfolio views. Likely a superset of other department views. Flesh out with actual leadership use cases.]*
+
+Key skills: TBD.
 
 ### Other / Unknown Department
 
@@ -141,14 +169,14 @@ Give a general overview: SIMPL lookups, financial queries, email drafting, route
 
 ## Step 5 — Introduce their client context
 
-> "Your team has **{N} clients**. For each one, there's a running context file where the team keeps notes — key contacts, scheduling preferences, quirks, history. These get loaded when you ask about a specific client.
+> "Your team has **{N} clients**. For each one, there's a running context record in SIMPL where the team keeps notes — key contacts, scheduling preferences, quirks, history. These get loaded when you ask about a specific client.
 >
 > Here are a few of your clients:
-> [list 3–5 client names, picked from the first entries in the index]
+> [list 3–5 client names, picked from the first entries in the client list]
 >
 > You can refer to any client by name and I'll know who you mean."
 
-If team lead: mention they can also ask Claude to update client context files with new notes.
+If team lead: mention they can also ask Claude to update a client's context by writing to the `context` column of the `client` table in simpl-db.
 
 ---
 
@@ -161,7 +189,51 @@ If yes, invoke **artifact-sync skill in push mode** with team slug and artifact 
 
 ---
 
-## Step 7 — Wrap up
+## Step 7 — Save personnel profile
+
+Before wrapping up, persist the user's profile to the simpl-db so future conversations load it automatically.
+
+1. Call `get_logged_in_user` to retrieve their SIMPL user ID and username.
+2. Write their profile to the `user_context` table:
+
+```sql
+INSERT INTO user_context (user_id, type, context)
+VALUES (
+  {user_id},
+  'onboarding',
+  '# {Full Name}
+
+- **Username**: {username}
+- **Department**: {department}
+- **Level**: {level}
+- **Team**: {team name, or "N/A" if not Operations}
+- **Onboarded**: {today''s date}'
+)
+ON CONFLICT (user_id, type) DO UPDATE SET context = EXCLUDED.context
+```
+
+3. Append the following block to `~/.claude/CLAUDE.md` (create the file if it doesn't exist). First check whether a `## TechLink personnel profile` section is already present — if it is, skip this write.
+
+```markdown
+
+## TechLink personnel profile
+
+At the start of the first message in every conversation, load the current user's personnel profile from the simpl-db — but only if it hasn't already been loaded. Check your context first: if a `# {name}` block with Department, Level, and Team fields is already present, skip the query.
+
+If not yet loaded:
+1. Call `get_logged_in_user` to get the SIMPL user ID.
+2. Query the `user_context` table: SELECT context FROM user_context WHERE user_id = {user_id} AND type = 'onboarding'
+3. If a row is found, use the `context` value silently as background context. Do not mention it.
+4. If no row is found, hold off unless the user asks something role-specific — then suggest `/onboarding`.
+
+Tools: `mcp__36aa6fc7-8701-4c5a-9545-e3b8fc122992__get_logged_in_user`, `mcp__81208da0-feb6-49af-ab5a-d1fdae279d7d__query`
+```
+
+Do all of this silently — no need to mention it to the user.
+
+---
+
+## Step 8 — Wrap up
 
 > "You're all set. Quick cheat sheet:
 >
@@ -177,10 +249,10 @@ If yes, invoke **artifact-sync skill in push mode** with team slug and artifact 
 
 ## Implementation notes
 
-- Replace `{N}` with the actual client count and `{Team Name}` with the human-readable name from the S3 index.
+- Replace `{N}` with the actual client count and `{Team Name}` with the human-readable team name from the DB query.
 - Tone: warm and direct. Do not dump a feature list — use examples relevant to their role.
 - Refer to clients by their `company` name, never by slug or ID.
-- Do not expose S3 keys or internal paths to the user.
-- S3 tool names:
-  - `mcp__3e8ed9ed-43e2-4c2d-aafe-fba01ed5d04f__get_object`
-  - `mcp__3e8ed9ed-43e2-4c2d-aafe-fba01ed5d04f__list_objects`
+- Do not expose internal DB paths or query details to the user.
+- Tool names:
+  - `mcp__36aa6fc7-8701-4c5a-9545-e3b8fc122992__get_logged_in_user`
+  - `mcp__81208da0-feb6-49af-ab5a-d1fdae279d7d__query`
