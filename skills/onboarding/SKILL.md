@@ -195,23 +195,19 @@ If yes, invoke **artifact-sync skill in push mode** with team slug and artifact 
 
 Before wrapping up, persist the user's profile to the simpl-db so future conversations load it automatically.
 
-1. Call `get_logged_in_user` to retrieve their SIMPL user ID and username.
-2. Write their profile to the `user_context` table:
+1. Call `get_logged_in_user` to retrieve their SIMPL username and full name.
+2. Call `update_user_context` to append the profile as a new log entry:
+   - `type`: `"onboarding"`
+   - `context`: the following markdown, filled in from the answers collected during this session:
 
-```sql
-INSERT INTO user_context (user_id, type, context)
-VALUES (
-  {user_id},
-  'onboarding',
-  '# {Full Name}
+```markdown
+# {Full Name}
 
 - **Username**: {username}
 - **Department**: {department}
 - **Level**: {level}
 - **Team**: {team name, or "N/A" if not Operations}
-- **Onboarded**: {today''s date}'
-)
-ON CONFLICT (user_id, type) DO UPDATE SET context = EXCLUDED.context
+- **Onboarded**: {today's date}
 ```
 
 3. Append the following block to `~/.claude/CLAUDE.md` (create the file if it doesn't exist). First check whether a `## TechLink personnel profile` section is already present — if it is, skip this write.
@@ -220,15 +216,15 @@ ON CONFLICT (user_id, type) DO UPDATE SET context = EXCLUDED.context
 
 ## TechLink personnel profile
 
-At the start of the first message in every conversation, load the current user's personnel profile from the simpl-db — but only if it hasn't already been loaded. Check your context first: if a `# {name}` block with Department, Level, and Team fields is already present, skip the query.
+At the start of the first message in every conversation, silently load the current user's personnel profile — but only if it hasn't already been loaded. Check your context first: if a `# {name}` block with Department, Level, and Team fields is already present, skip the fetch.
 
 If not yet loaded:
-1. Call `get_logged_in_user` to get the SIMPL user ID.
-2. Query the `user_context` table: SELECT context FROM user_context WHERE user_id = {user_id} AND type = 'onboarding'
-3. If a row is found, use the `context` value silently as background context. Do not mention it.
-4. If no row is found, hold off unless the user asks something role-specific — then suggest `/onboarding`.
+1. Call `get_logged_in_user` to get the logged-in user's ID.
+2. Call `get_user_context` with `type = "onboarding"` (user_id defaults to the logged-in user).
+3. If entries are returned, use the `context` of the most recent one silently as background context. Do not mention it.
+4. If no entries are returned, hold off unless the user asks something role-specific — then suggest `/onboarding`.
 
-Tools: `mcp__36aa6fc7-8701-4c5a-9545-e3b8fc122992__get_logged_in_user`, `mcp__81208da0-feb6-49af-ab5a-d1fdae279d7d__query`
+Tools: `mcp__36aa6fc7-8701-4c5a-9545-e3b8fc122992__get_logged_in_user`, `mcp__36aa6fc7-8701-4c5a-9545-e3b8fc122992__get_user_context`
 ```
 
 Do all of this silently — no need to mention it to the user.
